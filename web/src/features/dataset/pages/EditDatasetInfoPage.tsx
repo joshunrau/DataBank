@@ -1,8 +1,10 @@
 /* eslint-disable perfectionist/sort-objects */
+import { useCallback } from 'react';
+
 import { $DatasetLicenses, $EditDatasetInfo } from '@databank/core';
 import { Button, Form, Heading } from '@douglasneuroinformatics/libui/components';
 import { useNotificationsStore, useTranslation } from '@douglasneuroinformatics/libui/hooks';
-import { useNavigate, useParams } from '@tanstack/react-router';
+import { useNavigate, useParams, useSearch } from '@tanstack/react-router';
 import axios from 'axios';
 import { AnimatePresence, motion } from 'framer-motion';
 import { z } from 'zod/v4';
@@ -21,10 +23,12 @@ const $EditDatasetInfoDto = z.object({
 const EditDatasetInfoPage = () => {
   const params = useParams({ strict: false });
   const navigate = useNavigate();
-  const notifications = useNotificationsStore();
+  const addNotification = useNotificationsStore((state) => state.addNotification);
   const { t } = useTranslation('common');
 
   const { subscribe, licenseOptions } = useDebounceLicensesFilter();
+
+  const { name, description, permission, license } = useSearch({ from: '/portal/datasets/edit-info/$datasetId' });
 
   const permissionOption = {
     LOGIN: 'LOGIN',
@@ -33,17 +37,20 @@ const EditDatasetInfoPage = () => {
     VERIFIED: 'VERIFIED'
   };
 
-  const handleSubmit = (data: $EditDatasetInfo) => {
-    axios
-      .patch(`/v1/datasets/info/${params.datasetId}`, {
-        editDatasetInfoDto: data
-      })
-      .then(() => {
-        notifications.addNotification({ message: 'Dataset Information Updated!', type: 'success' });
-        void navigate({ to: `/portal/datasets/${params.datasetId}` });
-      })
-      .catch(console.error);
-  };
+  const handleSubmit = useCallback(
+    (data: $EditDatasetInfo) => {
+      axios
+        .patch(`/v1/datasets/info/${params.datasetId}`, {
+          editDatasetInfoDto: data
+        })
+        .then(() => {
+          addNotification({ message: 'Dataset Information Updated!', type: 'success' });
+          void navigate({ to: `/portal/datasets/${params.datasetId}` });
+        })
+        .catch(console.error);
+    },
+    [params.datasetId]
+  );
 
   return (
     <div className="flex w-full items-center justify-center">
@@ -69,16 +76,18 @@ const EditDatasetInfoPage = () => {
                       name: {
                         kind: 'string',
                         label: 'New Dataset Name',
-                        variant: 'input'
+                        variant: 'input',
+                        placeholder: name
                       },
                       description: {
                         kind: 'string',
                         label: 'New Dataset Description',
-                        variant: 'input'
+                        variant: 'input',
+                        placeholder: description
                       },
                       permission: {
                         kind: 'string',
-                        label: 'Permission',
+                        label: `Permission (Current Permission Level: ${permission})`,
                         options: permissionOption,
                         variant: 'select'
                       }
@@ -100,7 +109,7 @@ const EditDatasetInfoPage = () => {
                       },
                       license: {
                         kind: 'string',
-                        label: 'Select License',
+                        label: `Select License (Current License: ${license})`,
                         options: licenseOptions,
                         variant: 'select'
                       }

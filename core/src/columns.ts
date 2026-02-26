@@ -1,5 +1,8 @@
 import { z } from 'zod/v4';
 
+const $ISODate = z.union([z.iso.datetime().transform((dateStr) => new Date(dateStr)), z.date()]);
+type $ISODate = z.infer<typeof $ISODate>;
+
 const $ColumnType = z.enum(['STRING', 'INT', 'FLOAT', 'ENUM', 'DATETIME']);
 type $ColumnType = z.infer<typeof $ColumnType>;
 
@@ -7,11 +10,11 @@ const $PermissionLevel = z.enum(['PUBLIC', 'LOGIN', 'VERIFIED', 'MANAGER']);
 type $PermissionLevel = z.infer<typeof $PermissionLevel>;
 
 const $BasicSummary = z.object({
-  count: z.number().int().gte(0),
+  count: z.int().gte(0),
   dataPermission: $PermissionLevel,
   metadataPermission: $PermissionLevel,
   nullable: z.boolean(),
-  nullCount: z.number().int().gte(0)
+  nullCount: z.int().gte(0)
 });
 
 const $TabularColumnInfo = z
@@ -28,11 +31,11 @@ type $TabularColumnInfo = z.infer<typeof $TabularColumnInfo>;
 
 // ---------------------- Column Summaries ---------------------
 const $IntSummary = z.object({
-  max: z.number().int(),
+  max: z.int(),
   mean: z.number(),
   median: z.number(),
-  min: z.number().int(),
-  mode: z.number().int(),
+  min: z.int(),
+  mode: z.int(),
   std: z.number()
 });
 
@@ -40,7 +43,7 @@ const $EnumSummaryFromDB = z.object({
   distribution: z
     .object({
       '': z.string(),
-      count: z.number().int().gte(0)
+      count: z.int().gte(0)
     })
     .array()
 });
@@ -54,8 +57,8 @@ const $FloatSummary = z.object({
 });
 
 const $DatetimeSummary = z.object({
-  max: z.date(),
-  min: z.date()
+  max: $ISODate,
+  min: $ISODate
 });
 
 const $StringColumn = z.object({
@@ -110,7 +113,10 @@ const $EnumColumnSummary = $EnumColumn.omit({ enumData: true });
 const $DatetimeColumn = z.object({
   datetimeData: z.array(
     z.object({
-      value: z.date().optional()
+      value: z.iso
+        .date()
+        .transform((dateStr) => new Date(dateStr))
+        .optional()
     })
   ),
   datetimeSummary: $DatetimeSummary,
@@ -142,23 +148,38 @@ const $RawQueryColumn = z.object({
     $oid: z.string()
   }),
   dataPermission: $PermissionLevel,
-  datetimeData: z.object({ value: z.date().nullable() }).array().nullable(),
+  datetimeData: z
+    .object({
+      value: z.object({
+        $date: z.iso
+          .date()
+          .transform((dateStr) => new Date(dateStr))
+          .nullable()
+      })
+    })
+    .array()
+    .nullable(),
   description: z.string().nullable(),
   enumData: z.object({ value: z.string().nullable() }).array().nullable(),
   floatData: z.object({ value: z.number().nullable() }).array().nullable(),
-  intData: z.object({ value: z.number().int().nullable() }).array().nullable(),
+  intData: z.object({ value: z.int().nullable() }).array().nullable(),
   kind: $ColumnType,
   name: z.string(),
   nullable: z.boolean(),
   // store the actual data in a pl.series(array) depending on the type of the column
   stringData: z.object({ value: z.string().nullable() }).array().nullable(),
   summary: z.object({
-    count: z.number().int().gte(0),
-    datetimeSummary: $DatetimeSummary.nullable(),
+    count: z.int().gte(0),
+    datetimeSummary: z
+      .object({
+        max: z.object({ $date: $ISODate }),
+        min: z.object({ $date: $ISODate })
+      })
+      .nullable(),
     enumSummary: $EnumSummaryFromDB.nullable(),
     floatSummary: $FloatSummary.nullable(),
     intSummary: $IntSummary.nullable(),
-    nullCount: z.number().int().gte(0)
+    nullCount: z.int().gte(0)
   }),
   summaryPermission: $PermissionLevel,
   tabularDataId: z.string()
@@ -171,6 +192,7 @@ export {
   $EnumColumn,
   $FloatColumn,
   $IntColumn,
+  $ISODate,
   $PermissionLevel,
   $RawQueryColumn,
   $StringColumn,
