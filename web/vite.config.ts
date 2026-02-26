@@ -4,7 +4,7 @@ import * as path from 'node:path';
 import importMetaEnv from '@import-meta-env/unplugin';
 import tailwindcss from '@tailwindcss/vite';
 import tanstackRouter from '@tanstack/router-plugin/vite';
-import react from '@vitejs/plugin-react-swc';
+import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 
 async function getAppVersion() {
