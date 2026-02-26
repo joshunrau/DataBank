@@ -288,6 +288,9 @@ importers:
       tailwindcss:
         specifier: ^4.1.4
         version: 4.1.4
+      type-fest:
+        specifier: 'catalog:'
+        version: 4.39.1
       vite:
         specifier: ^6.2.4
         version: 6.2.6(@types/node@22.14.1)(jiti@2.4.2)(lightningcss@1.29.2)(tsx@4.19.3)

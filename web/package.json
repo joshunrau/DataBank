@@ -61,6 +61,7 @@
     "postcss": "^8.5.4",
     "storybook": "^8.6.11",
     "tailwindcss": "^4.1.4",
+    "type-fest": "catalog:",
     "vite": "^6.2.4"
   }
 }
